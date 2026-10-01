@@ -63,3 +63,16 @@ def test_update_refuses_unpinned_revision_before_writes(tmp_path):
     with pytest.raises(RuntimeError, match='40-character'):
         update(tmp_path, ROOT, 'main')
     assert set(tmp_path.iterdir()) == before
+
+
+def test_frozen_runtime_build_does_not_include_developer_dependencies(tmp_path):
+    import os
+    import shutil
+    uv = shutil.which('uv')
+    assert uv, 'uv is required for runtime-install acceptance'
+    env = dict(os.environ, UV_PROJECT_ENVIRONMENT=str(tmp_path / 'runtime-venv'))
+    env.pop('VIRTUAL_ENV', None)
+    result = subprocess.run([uv, 'sync', '--frozen', '--dry-run', '--python', sys.executable],
+                            cwd=ROOT, env=env, capture_output=True, text=True, timeout=120)
+    assert result.returncode == 0, result.stderr
+    assert not any(line.strip().startswith('+ pytest==') for line in result.stderr.splitlines()), result.stderr

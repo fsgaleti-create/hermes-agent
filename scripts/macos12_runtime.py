@@ -77,7 +77,7 @@ def update(root: Path, source: Path, revision: str) -> None:
         if not bootstrap.is_file():
             raise RuntimeError('Run this controller with an installed Python 3.14 interpreter')
         run([bootstrap, '-B', '-m', 'pm.build_env', '--source', generation, '--out', generation / 'venv',
-             '--python', bootstrap], cwd=generation)
+             '--python', bootstrap, '--cache', Path.home() / '.cache/uv'], cwd=generation)
         python = generation / 'venv/bin/python'
         run([python, '-B', '-m', 'hermes_cli.main', 'pm', 'install', 'node', 'npm'], cwd=generation)
         probe = ('import sys,ssl,sqlite3,cryptography,pydantic,PIL,pillow_heif; '
