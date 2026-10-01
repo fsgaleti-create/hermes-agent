@@ -17,6 +17,14 @@ def isolated_environment(root: Path) -> dict[str, str]:
     env.update(HERMES_HOME=str(root / 'home'), HERMES_RUNTIME_DIR=str(root / 'tools'),
                HERMES_DISABLE_LAZY_INSTALLS='1', PYTHONDONTWRITEBYTECODE='1',
                TMPDIR=str(root / 'scratch'))
+    pin = root / 'cua-driver.json'
+    if pin.is_file():
+        import hashlib
+        driver = json.loads(pin.read_text())
+        command = Path(driver['command'])
+        if not command.is_absolute() or hashlib.sha256(command.read_bytes()).hexdigest() != driver['sha256']:
+            raise RuntimeError('Custom driver hash mismatch; refusing to launch')
+        env['HERMES_CUA_DRIVER_CMD'] = str(command)
     return env
 
 

@@ -10,9 +10,23 @@ Builds are staged into a new generation, using the upstream PM
 `pm.build_env` with the frozen `uv.lock`. Runtime activation retains the
 explicit generation's venv. PM installs only the reviewed node/npm roots;
 lazy installs remain disabled. This prevents an unreviewed cua-driver download
-from replacing a separately fixed driver. A custom driver must be integrated
-by a separately reviewed artifact+hash/PM fact; this branch does not claim
-that integration.
+from replacing a separately fixed driver. `isolated/cua-driver.json` selects
+an absolute custom driver path plus SHA-256; every launch checks its bytes
+before exporting `HERMES_CUA_DRIVER_CMD`. The tested custom driver is 0.31.0,
+compiled for macOS 12.0 without ScreenCaptureKit/Swift. Its SHA-256 is
+`8efaf5cd1d1b4b7d98be156e6d15b026d7fdb6cd345c4bf91b49c711c4e91603`.
+Only the isolated home enables `computer_use.allow_unsigned_driver` and
+`computer_use.no_overlay` via the config CLI. Do not enable those flags on an
+unreviewed driver, and do not run driver install/update/upgrade here.
+
+The driver starts and its version/platform checks pass through the real
+Hermes wrapper. Capture/input remain **blocked by pending Accessibility and
+Screen Recording TCC grants**. The user must grant them manually; this is not
+a claim that capture works. The existing active driver is left untouched.
+
+PM staging explicitly reuses the ordinary uv cache at `~/.cache/uv`, including
+the exact-version compatible cryptography wheel available on the tested Mac.
+A cold cache without a Rust/OpenSSL toolchain is not validated by this receipt.
 
 ## Isolated installation / update
 

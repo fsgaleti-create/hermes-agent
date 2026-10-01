@@ -76,3 +76,20 @@ def test_frozen_runtime_build_does_not_include_developer_dependencies(tmp_path):
                             cwd=ROOT, env=env, capture_output=True, text=True, timeout=120)
     assert result.returncode == 0, result.stderr
     assert not any(line.strip().startswith('+ pytest==') for line in result.stderr.splitlines()), result.stderr
+
+
+def test_isolated_launcher_pins_custom_driver_without_changing_parent_environment(tmp_path, monkeypatch):
+    import hashlib
+    import os
+    from scripts.macos12_runtime import isolated_environment
+    driver = tmp_path / 'reviewed-driver'
+    driver.write_bytes(b'unit-test driver artifact')
+    digest = hashlib.sha256(driver.read_bytes()).hexdigest()
+    (tmp_path / 'cua-driver.json').write_text(json.dumps({'command': str(driver), 'sha256': digest}))
+    monkeypatch.setenv('HERMES_CUA_DRIVER_CMD', '/unchanged/active/driver')
+    env = isolated_environment(tmp_path)
+    assert env['HERMES_CUA_DRIVER_CMD'] == str(driver)
+    assert os.environ['HERMES_CUA_DRIVER_CMD'] == '/unchanged/active/driver'
+    driver.write_bytes(b'changed bytes')
+    with pytest.raises(RuntimeError, match='driver hash'):
+        isolated_environment(tmp_path)
